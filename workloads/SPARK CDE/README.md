@@ -135,97 +135,23 @@ The DAG uses `schedule_interval=None` (manual / trigger-only). To run on a sched
 
 `CdeRunJobOperator` needs to know **which CDE virtual cluster** hosts the Spark job. That is controlled by the Airflow **connection** passed as `connection_id`.
 
-### Same virtual cluster (this demo — default)
-
-If the **Airflow job** and the **Spark job** are on the **same** CDE virtual cluster, you usually **do not** need extra setup:
-
-- In `dags/retail_orders_orchestration_dag.py`, leave:
-  ```python
-  CDE_CONNECTION_ID = None
-  ```
-- CDE resolves the Spark job on the VC where the Airflow job is running.
-
-On many CDP versions, a built-in connection such as **`cde_runtime_api`** points at the current VC. You only need to set `CDE_CONNECTION_ID` if your environment’s docs tell you to use that explicit id instead of omitting it.
-
-### Different virtual cluster (cross-VC)
-
-If Airflow runs on **VC-A** but the Spark job is defined on **VC-B**, create an Airflow connection to VC-B, then set `CDE_CONNECTION_ID` in the DAG to that connection’s **Conn Id**.
-
-1. In **Cloudera Data Engineering**, open **VC-B** → **Cluster details** → copy the **Jobs API URL**.
-2. Open the **Airflow UI** for the VC where this DAG runs (CDE → your VC → **Airflow UI**).
-3. **Admin** → **Connections** → **Add**.
-4. Typical fields (labels vary by CDP version):
+**Admin** → **Connections** → **Add**.
+Typical fields (labels vary by CDP version):
 
    | Field | Value |
    |--------|--------|
    | **Conn Id** | e.g. `cde_vc_prod` (you choose; use this in the DAG) |
    | **Conn Type** | **Cloudera Data Engineering** |
-   | **Host / Virtual Cluster API endpoint** | Jobs API URL for **VC-B** |
-   | **Login / Access key** | CDP access key allowed to run jobs on VC-B |
+   | **Host / Virtual Cluster API endpoint** | Jobs API URL for **VC** |
+   | **Login / Access key** | CDP access key allowed to run jobs on VC |
    | **Password / Private key** | Matching CDP private key |
+
+Refer 
 
 5. In the DAG file:
    ```python
    CDE_CONNECTION_ID = "cde_vc_prod"
    ```
-6. Re-upload the DAG to your Files resource and run the Airflow job again.
 
-The Spark job **`retail-orders-spark-demo`** must exist on the **target** VC (the one the connection points to), not only on the VC where Airflow is deployed.
 
-### External Airflow (not CDE-managed)
-
-If you run Airflow **outside** CDE, install the Cloudera Airflow provider and create the same **Cloudera Data Engineering** connection in that Airflow deployment (Jobs API URL + CDP keys). See Cloudera docs: *Using Cloudera Data Engineering with an external Apache Airflow deployment*.
-
-### Reference in this repo
-
-| Setting | Location |
-|---------|----------|
-| `CDE_CONNECTION_ID` | Top of `dags/retail_orders_orchestration_dag.py` |
-| Operator argument | Passed as `connection_id` only when `CDE_CONNECTION_ID` is set |
-
----
-
-## Architecture
-
-```mermaid
-flowchart LR
-  subgraph cde_ui [CDE UI]
-    Resource[Files resource]
-    SparkJob[Spark job]
-    AirflowJob[Airflow job]
-  end
-  Resource --> SparkJob
-  Resource --> AirflowJob
-  AirflowJob --> DAG[retail_orders_orchestration DAG]
-  DAG --> Op[CdeRunJobOperator]
-  Op --> SparkJob
-  SparkJob --> Logs[Driver logs]
-```
-
-## Operator compatibility
-
-CDE versions differ slightly:
-
-- Newer: `cloudera.airflow.providers.operators.cde.CdeRunJobOperator`
-- Older: `cloudera.cdp.airflow.operators.cde_operator.CDEJobRunOperator`
-
-The DAG file tries both imports automatically. If parsing fails, check your CDP version’s Airflow provider documentation.
-
-## Troubleshooting
-
-| Issue | Check |
-|--------|--------|
-| Airflow task fails immediately | Spark job **name** in UI matches `SPARK_CDE_JOB_NAME` in the DAG file. |
-| Spark job not found | Spark job exists on the **same** virtual cluster, or set `CDE_CONNECTION_ID` in the DAG. |
-| DAG not visible | Airflow job **DAG file** path matches upload path; remount resource after DAG changes. |
-| No output tables | View **Spark** driver logs for the run created by the Airflow task. |
-| Import error in DAG | Provider package on your CDE Airflow image; adjust import per Cloudera docs for your version. |
-
-## Customization
-
-- **Sample data / rules:** edit `src/basic_cde_spark_job.py`, re-upload, re-run Spark (or via Airflow).
-- **Orchestration:** edit `dags/retail_orders_orchestration_dag.py` (retries, `execution_timeout`, schedule, extra tasks).
-
-## Support
-
-Use Cloudera documentation for your CDP version: CDE resources, Spark jobs, and Airflow jobs. This repository is a reference sample only.
+The Spark job **`retail-orders-spark-demo`** must exist on the **target** VC (the one the connection points to). 
