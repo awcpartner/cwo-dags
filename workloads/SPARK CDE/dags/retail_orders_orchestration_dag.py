@@ -27,10 +27,8 @@ except ImportError:
 # Must match the Spark job name exactly as defined in the CDE UI.
 SPARK_CDE_JOB_NAME = "retail-orders-spark-demo"
 
-# Airflow connection to the CDE VC that owns the Spark job (see README:
-# "CDE connection from Airflow"). None = same VC as this Airflow job.
-# Example for another VC: CDE_CONNECTION_ID = "cde_vc_prod"
-CDE_CONNECTION_ID = None
+# Example CDE_CONNECTION_ID = "cde_vc_prod"
+CDE_CONNECTION_ID = cde_vc_prod
 
 DEFAULT_ARGS = {
     "owner": "cde-demo",
