@@ -1,0 +1,58 @@
+{
+  "airflow": {
+    "api_prefix": "/api/v2",
+    "verify_tls": false,
+    "auth": {
+      "type": "awc_console_oauth",
+      "domain_env": "DOMAIN",
+      "cwo_url_env": "CWO_URL",
+      "client_id_env": "CLIENT_ID",
+      "client_secret_env": "CLIENT_SECRET"
+    }
+  },
+  "dag_expectations": {
+    "prefix": "test_dag_",
+    "count": 100,
+    "trigger_dag_id": "trigger_test_dags"
+  },
+  "sync": {
+    "enabled": true,
+    "timeout_sec": 1800,
+    "poll_interval_sec": 5,
+    "require_import_errors_empty": false,
+    "ignore_import_error_substrings": [
+      "import_error.py",
+      "invalid_dag.py",
+      "task_with_import_error.py"
+    ],
+    "git_publish": {
+      "enabled": true,
+      "repo_path": "__cwd__",
+      "remote": "origin",
+      "branch": "CAF-405-main",
+      "marker_file_relative": "workloads/dags/test_dags.py",
+      "stash_local_changes": true
+    }
+  },
+  "execution": {
+    "enabled": true,
+    "triggers": [
+      {
+        "parallelism": 2,
+        "repetitions": 1,
+        "conf": {
+          "dag_num": 2,
+          "sleep_sec": 30,
+          "cpu_task_num": 2,
+          "sleep_task_num": 2
+        }
+      }
+    ],
+    "wait": {
+      "timeout_sec": 7200,
+      "poll_interval_sec": 30,
+      "poll_jitter_fraction": 0.2,
+      "include_triggered_children": true
+    }
+  }
+}
