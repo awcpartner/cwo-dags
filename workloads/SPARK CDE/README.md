@@ -104,7 +104,7 @@ Create the Spark job **first**. The DAG only **calls** that existing job by name
 
 ### B1 — Upload the DAG file
 
-Add to the **same** Files resource (or a dedicated one):
+Add to the **same** Files resource (or a dedicated one) to git:
 
 ```text
 dags/retail_orders_orchestration_dag.py
@@ -112,25 +112,9 @@ dags/retail_orders_orchestration_dag.py
 
 ### B2 — Create the Airflow job
 
-1. **Jobs** → **Create Job** → **Airflow** (not Spark).
-2. **Name:** e.g. `retail-orders-airflow-demo`.
-3. **DAG file:** path inside the mount, e.g. `retail_orders_orchestration_dag.py`.
-4. **Mount** the resource that contains the DAG file.
-5. Save.
+Once the dag is uploaded to Git, it should automatically get detected by the Airflow UI. 
 
-### B3 — Run the Airflow job
-
-1. **Run** the Airflow job from the UI.
-2. In the Airflow UI for your virtual cluster (or job run details), open DAG **`retail_orders_orchestration`**.
-3. Confirm task flow: `start` → `run_retail_orders_spark` → `end`.
-4. When `run_retail_orders_spark` succeeds, open the **Spark job run** it triggered and review the same driver log output as in Part A.
-
-### B4 — Scheduling (optional)
-
-The DAG uses `schedule_interval=None` (manual / trigger-only). To run on a schedule, change `schedule_interval` in the DAG file (for example `@daily`), re-upload to the resource, and update the Airflow job if your environment requires a refresh.
-
----
-
+### B3 — 
 ## CDE connection from Airflow (`connection_id`)
 
 `CdeRunJobOperator` needs to know **which CDE virtual cluster** hosts the Spark job. That is controlled by the Airflow **connection** passed as `connection_id`.
@@ -146,12 +130,26 @@ Typical fields (labels vary by CDP version):
    | **Login / Access key** | CDP access key allowed to run jobs on VC |
    | **Password / Private key** | Matching CDP private key |
 
-Refer 
-
-5. In the DAG file:
+In the DAG file:
    ```python
    CDE_CONNECTION_ID = "cde_vc_prod"
    ```
 
 
 The Spark job **`retail-orders-spark-demo`** must exist on the **target** VC (the one the connection points to). 
+
+Reference Doc : https://docs-beta.cloudera.com/cloudera-workflow-orchestrator/test/connecting-to-cloudera-providers/topics/cwo-integrating-with-spark-on-cde-service
+
+
+### B4 - Run the Airflow job
+
+1. **Run** the Airflow job from the UI.
+2. In the Airflow UI for your virtual cluster (or job run details), open DAG **`retail_orders_orchestration`**.
+3. Confirm task flow: `start` → `run_retail_orders_spark` → `end`.
+4. When `run_retail_orders_spark` succeeds, open the **Spark job run** it triggered and review the same driver log output as in Part A.
+
+### B5 — Scheduling (optional)
+
+The DAG uses `schedule_interval=None` (manual / trigger-only). To run on a schedule, change `schedule_interval` in the DAG file (for example `@daily`), re-upload to the resource, and update the Airflow job if your environment requires a refresh.
+
+---
