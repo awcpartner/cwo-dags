@@ -1,0 +1,16 @@
+{
+  "spark_app_name": "enterprise-retail-orders-cde",
+  "timezone": "UTC",
+  "write_mode": "overwrite",
+  "paths": {
+    "raw_orders": "hdfs:///tmp/cde-enterprise-demo/retail/raw/orders",
+    "silver_orders": "hdfs:///tmp/cde-enterprise-demo/retail/silver/orders",
+    "rejected_orders": "hdfs:///tmp/cde-enterprise-demo/retail/silver/rejected_orders",
+    "gold_daily_kpis": "hdfs:///tmp/cde-enterprise-demo/retail/gold/daily_kpis",
+    "audit": "hdfs:///tmp/cde-enterprise-demo/retail/audit/job_runs"
+  },
+  "data_quality": {
+    "accepted_statuses": ["COMPLETE", "PENDING", "CANCELLED"],
+    "fail_on_rejected_records": false
+  }
+}
