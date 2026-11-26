@@ -54,7 +54,7 @@ def clean_orders(ti):
                 "customer_email": row["customer_email"].strip().lower(),
                 "region": row["region"].strip().lower(),
                 "order_date": row["order_date"].strip(),
-                "amount": round(float(row["amount"].replace("$", "").replace(",", "").strip()), 2),
+                "amount": round(float(row["amount"]), 2),
                 "status": status,
             }
         )
@@ -79,7 +79,7 @@ def region_summary(ti):
     counts = {}
     for row in raw_rows:
         region = row["region"].strip().lower()
-        counts[region] = counts.get(region, 0) + 1
+        counts[region] += 1
 
     out = io.StringIO()
     writer = csv.writer(out)
