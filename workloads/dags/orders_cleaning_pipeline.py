@@ -19,7 +19,7 @@ AWS_CONN_ID = "aws_s3_cwo_conn"
 BUCKET = "ccf-s3-backup-uswest2"
 RAW_KEY = "airflow-demo/raw/orders_2026-11-25.csv"
 CLEAN_KEY = "airflow-demo/clean/orders_2026-11-25.csv"
-CLEAN_COLUMNS = ["order_id", "customer_email", "region", "order_date", "amount", "status"]
+CLEAN_COLUMNS = ["order_id", "email", "region", "order_date", "amount", "status"]
 
 
 def read_raw_orders():
