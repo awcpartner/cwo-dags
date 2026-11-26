@@ -12,7 +12,7 @@ Trigger it manually from the Airflow UI.
 import csv
 import io
 import json
-from datetime import date, timedelta
+from datetime import timedelta
 
 from airflow import DAG
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
@@ -25,12 +25,11 @@ RAW_KEY = "airflow-demo/raw/raw_orders_2026-11-25.csv"
 TYPED_KEY = "airflow-demo/typed/orders_typed_2026-11-25.jsonl"
 
 # Declared type of every column in the export. "amount" is kept as raw text here, money parsing happens downstream.
-# "order_date" is an ISO date (YYYY-MM-DD); it is written back to S3 as an ISO string via json.dumps(default=str).
 COLUMN_TYPES = {
     "order_id": int,
     "customer_email": str,
     "region": str,
-    "order_date": date.fromisoformat,
+    "order_date": int,
     "amount": str,
     "status": str,
 }
@@ -44,9 +43,9 @@ def fetch_raw_file():
 
 
 def load_legacy_export(ti):
-    """Loads the export for the legacy reporting feed by parsing the raw CSV rows."""
+    """Loads the export for the legacy reporting feed, which expects one JSON object per line."""
     body = ti.xcom_pull(task_ids="fetch_raw_file")
-    records = list(csv.DictReader(io.StringIO(body)))
+    records = [json.loads(line) for line in body.splitlines() if line.strip()]
     print(f"loaded {len(records)} records from the export")
     return len(records)
 
