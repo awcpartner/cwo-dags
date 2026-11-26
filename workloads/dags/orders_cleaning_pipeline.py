@@ -1,15 +1,13 @@
 """Orders cleaning pipeline.
 
-Reads the daily raw orders export from S3, cleans it with plain Python, and writes the cleaned file back to S3.
-Trigger it manually from the Airflow UI.
+Reads the daily raw orders export from S3 and produces two files back in S3. Trigger it manually from the Airflow UI.
 
-    raw   : s3://ccf-s3-backup-uswest2/airflow-demo/raw/orders_2026-11-25.csv
-    clean : s3://ccf-s3-backup-uswest2/airflow-demo/clean/orders_2026-11-25.csv
-    stats : s3://ccf-s3-backup-uswest2/airflow-demo/clean/region_summary_2026-11-25.csv
+    raw     : s3://ccf-s3-backup-uswest2/airflow-demo/raw/orders_2026-11-25.csv
+    clean   : s3://ccf-s3-backup-uswest2/airflow-demo/clean/orders_2026-11-25.csv
+    summary : s3://ccf-s3-backup-uswest2/airflow-demo/clean/region_summary_2026-11-25.csv
 
-                    +--> clean_orders --> write_clean_orders
-    read_raw_orders -+
-                    +--> region_summary
+    read_raw_orders -> clean_orders -> write_clean_orders
+    read_raw_orders -> region_summary
 """
 import csv
 import io
@@ -76,17 +74,18 @@ def write_clean_orders(ti):
 
 
 def region_summary(ti):
-    """Counts raw orders per region and writes the counts to S3 (independent of clean_orders)."""
+    """Counts raw orders per region and writes a small summary file."""
     raw_rows = ti.xcom_pull(task_ids="read_raw_orders")
     counts = {}
     for row in raw_rows:
-        region = row["Region"].strip().lower()
-        counts[region] = counts.get(region, 0) + 1
+        region = row["region"].strip().lower()
+        counts[region] += 1
+
     out = io.StringIO()
     writer = csv.writer(out)
-    writer.writerow(["region", "orders"])
-    for region, n in sorted(counts.items()):
-        writer.writerow([region, n])
+    writer.writerow(["region", "raw_order_count"])
+    for region in sorted(counts):
+        writer.writerow([region, counts[region]])
     hook = S3Hook(aws_conn_id=AWS_CONN_ID)
     hook.load_string(out.getvalue(), key=SUMMARY_KEY, bucket_name=BUCKET, replace=True)
     print(f"wrote summary for {len(counts)} regions to s3://{BUCKET}/{SUMMARY_KEY}")
@@ -106,5 +105,5 @@ with DAG(
     write_clean = PythonOperator(task_id="write_clean_orders", python_callable=write_clean_orders)
     summary = PythonOperator(task_id="region_summary", python_callable=region_summary)
 
-    read_raw >> [clean, summary]
-    clean >> write_clean
+    read_raw >> clean >> write_clean
+    read_raw >> summary
