@@ -5,6 +5,11 @@ Trigger it manually from the Airflow UI.
 
     raw   : s3://ccf-s3-backup-uswest2/airflow-demo/raw/orders_2026-11-25.csv
     clean : s3://ccf-s3-backup-uswest2/airflow-demo/clean/orders_2026-11-25.csv
+    stats : s3://ccf-s3-backup-uswest2/airflow-demo/clean/region_summary_2026-11-25.csv
+
+                    +--> clean_orders --> write_clean_orders
+    read_raw_orders -+
+                    +--> region_summary
 """
 import csv
 import io
@@ -19,7 +24,8 @@ AWS_CONN_ID = "aws_s3_cwo_conn"
 BUCKET = "ccf-s3-backup-uswest2"
 RAW_KEY = "airflow-demo/raw/orders_2026-11-25.csv"
 CLEAN_KEY = "airflow-demo/clean/orders_2026-11-25.csv"
-CLEAN_COLUMNS = ["order_id", "email", "region", "order_date", "amount", "status"]
+SUMMARY_KEY = "airflow-demo/clean/region_summary_2026-11-25.csv"
+CLEAN_COLUMNS = ["order_id", "customer_email", "region", "order_date", "amount", "status"]
 
 
 def read_raw_orders():
@@ -69,6 +75,23 @@ def write_clean_orders(ti):
     print(f"wrote {len(cleaned)} rows to s3://{BUCKET}/{CLEAN_KEY}")
 
 
+def region_summary(ti):
+    """Counts raw orders per region and writes the counts to S3 (independent of clean_orders)."""
+    raw_rows = ti.xcom_pull(task_ids="read_raw_orders")
+    counts = {}
+    for row in raw_rows:
+        region = row["Region"].strip().lower()
+        counts[region] = counts.get(region, 0) + 1
+    out = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow(["region", "orders"])
+    for region, n in sorted(counts.items()):
+        writer.writerow([region, n])
+    hook = S3Hook(aws_conn_id=AWS_CONN_ID)
+    hook.load_string(out.getvalue(), key=SUMMARY_KEY, bucket_name=BUCKET, replace=True)
+    print(f"wrote summary for {len(counts)} regions to s3://{BUCKET}/{SUMMARY_KEY}")
+
+
 with DAG(
     dag_id="orders_cleaning_pipeline",
     start_date=datetime(2024, 1, 1),
@@ -81,5 +104,7 @@ with DAG(
     read_raw = PythonOperator(task_id="read_raw_orders", python_callable=read_raw_orders)
     clean = PythonOperator(task_id="clean_orders", python_callable=clean_orders)
     write_clean = PythonOperator(task_id="write_clean_orders", python_callable=write_clean_orders)
+    summary = PythonOperator(task_id="region_summary", python_callable=region_summary)
 
-    read_raw >> clean >> write_clean
+    read_raw >> [clean, summary]
+    clean >> write_clean
