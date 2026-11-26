@@ -29,7 +29,7 @@ COLUMN_TYPES = {
     "order_id": int,
     "customer_email": str,
     "region": str,
-    "order_date": int,
+    "order_date": str,
     "amount": str,
     "status": str,
 }
@@ -45,9 +45,10 @@ def fetch_raw_file():
 def load_legacy_export(ti):
     """Loads the export for the legacy reporting feed, which expects one JSON object per line."""
     body = ti.xcom_pull(task_ids="fetch_raw_file")
-    records = [json.loads(line) for line in body.splitlines() if line.strip()]
-    print(f"loaded {len(records)} records from the export")
-    return len(records)
+    records = list(csv.DictReader(io.StringIO(body)))
+    json_lines = [json.dumps(record) for record in records]
+    print(f"loaded {len(json_lines)} records from the export")
+    return len(json_lines)
 
 
 def load_typed_snapshot(ti):
