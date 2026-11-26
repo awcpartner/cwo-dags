@@ -2,7 +2,7 @@
 
 Reads the daily raw orders export from S3 and produces two files back in S3. Trigger it manually from the Airflow UI.
 
-    raw     : s3://ccf-s3-backup-uswest2/airflow-demo/raw/orders_2026-11-25.csv
+    raw     : s3://ccf-s3-backup-uswest2/airflow-demo/raw/raw_orders_2026-11-25.csv
     clean   : s3://ccf-s3-backup-uswest2/airflow-demo/clean/orders_2026-11-25.csv
     summary : s3://ccf-s3-backup-uswest2/airflow-demo/clean/region_summary_2026-11-25.csv
 
@@ -20,7 +20,7 @@ from pendulum import datetime
 
 AWS_CONN_ID = "aws_s3_cwo_conn"
 BUCKET = "ccf-s3-backup-uswest2"
-RAW_KEY = "airflow-demo/raw/orders_2026-11-25.csv"
+RAW_KEY = "airflow-demo/raw/raw_orders_2026-11-25.csv"
 CLEAN_KEY = "airflow-demo/clean/orders_2026-11-25.csv"
 SUMMARY_KEY = "airflow-demo/clean/region_summary_2026-11-25.csv"
 CLEAN_COLUMNS = ["order_id", "customer_email", "region", "order_date", "amount", "status"]
